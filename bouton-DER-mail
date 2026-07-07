@@ -1,0 +1,137 @@
+// ==UserScript==
+// @name         Modulr - Liaison DER 2026 Popup Exacte
+// @namespace    http://tampermonkey.net/
+// @version      8.0
+// @description  Bouton large rouge à gauche. Clique précisément sur le bouton Valider de la popup.
+// @author       le goat
+// @match        https://courtage.modulr.fr/fr/scripts/documents/documents_send.php*
+// @grant        none
+// @updateURL    https://github.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
+// @downloadURL  https://github.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Fonction d'aide pour attendre l'apparition des éléments (Popups / Ajax)
+    function attendreElement(selector, timeout = 4000) {
+        return new Promise((resolve, reject) => {
+            const el = document.querySelector(selector);
+            if (el) return resolve(el);
+
+            const observer = new MutationObserver((mutations, obs) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    obs.disconnect();
+                    resolve(element);
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            setTimeout(() => { observer.disconnect(); reject(new Error("Élément introuvable : " + selector)); }, timeout);
+        });
+    }
+
+    function injecterBoutonDesign() {
+        const zoneActions = document.querySelector('div.align_right');
+
+        if (zoneActions && !document.getElementById('btn-der-2026-sequence')) {
+            const btn = document.createElement('button');
+            btn.id = 'btn-der-2026-sequence';
+            btn.type = 'button';
+
+            btn.innerHTML = '<span class="fa fa-plus-circle" style="margin-right: 8px;"></span><span>AJOUTER DOCUMENT D\'ENTRÉE EN RELATION</span>';
+
+            // Style de l'UI demandé : Rouge plein très voyant, pas juste le contour
+            btn.style.setProperty('background-color', '#ff4757', 'important');
+            btn.style.setProperty('color', '#ffffff', 'important');
+            btn.style.setProperty('font-weight', 'bold', 'important');
+            btn.style.setProperty('border', 'none', 'important');
+            btn.style.setProperty('border-radius', '4px', 'important');
+            btn.style.setProperty('cursor', 'pointer', 'important');
+            btn.style.setProperty('padding', '10px 18px', 'important');
+            btn.style.setProperty('font-size', '12px', 'important');
+
+            // Positionnement : Occupe tout le côté gauche (margin-right: auto)
+            btn.style.setProperty('margin-right', 'auto', 'important');
+
+            btn.addEventListener('click', executerSequenceClics);
+
+            // Ajustement flexbox du conteneur d'action natif de Modulr
+            zoneActions.style.setProperty('display', 'flex', 'important');
+            zoneActions.style.setProperty('justify-content', 'flex-end', 'important');
+            zoneActions.style.setProperty('align-items', 'center', 'important');
+            zoneActions.style.setProperty('width', '100%', 'important');
+
+            zoneActions.insertBefore(btn, zoneActions.firstChild);
+        }
+    }
+
+    async function executerSequenceClics() {
+        const btn = document.getElementById('btn-der-2026-sequence');
+        const texte = btn.querySelector('span:not(.fa)');
+        const icone = btn.querySelector('.fa');
+        const texteInitial = "AJOUTER DOCUMENT D'ENTRÉE EN RELATION (DER 2026)";
+
+        texte.innerText = "Ouverture du dossier partagé...";
+        icone.className = "fa fa-spinner fa-spin";
+        btn.disabled = true;
+
+        try {
+            // 1. Clic sur le bouton d'ouverture de la popup
+            const btnOuvrirPopup = document.querySelector('button[data-callback="Modulr.SentEmail.Attachment.OpenFolderPopup"]');
+            if (!btnOuvrirPopup) throw new Error("Bouton d'ouverture de dossier introuvable");
+            btnOuvrirPopup.click();
+
+            // 2. Attendre et cliquer sur le menu déroulant des dossiers
+            texte.innerText = "Sélection du dossier LTOA...";
+            const btnChoixDossier = await attendreElement('#pop_up button.ms-choice');
+            btnChoixDossier.click();
+
+            // 3. Attendre et cliquer sur le bouton radio LTOA (value="7")
+            const radioLtoa = await attendreElement('#pop_up input[type="radio"][name="selectItemfolder_id"][value="7"]');
+            radioLtoa.click();
+
+            // 4. Attendre l'apparition et cocher la case "DER 2026 - PDF" (value="51851")
+            texte.innerText = "Coche de DER 2026 - PDF...";
+            const checkboxDer = await attendreElement('#pop_up input[type="checkbox"][value="51851"]');
+            if (!checkboxDer.checked) {
+                checkboxDer.click();
+            }
+
+            // 5. Cliquer sur le bouton "submit" de la popup (celui avec le fa-check de la modale)
+            texte.innerText = "Validation de la popup...";
+            const btnValidationPopup = await attendreElement('#pop_up form button[type="submit"]');
+            btnValidationPopup.click();
+
+            // Succès réel constaté
+            icone.className = "fa fa-check";
+            texte.innerText = "Fichier joint avec succès !";
+            btn.style.setProperty('background-color', '#2ed573', 'important');
+
+            setTimeout(() => {
+                icone.className = "fa fa-plus-circle";
+                texte.innerText = texteInitial;
+                btn.style.setProperty('background-color', '#ff4757', 'important');
+                btn.disabled = false;
+            }, 3000);
+
+        } catch (erreur) {
+            console.error('Erreur séquence Modulr :', erreur);
+            icone.className = "fa fa-exclamation-triangle";
+            texte.innerText = "Erreur : " + erreur.message;
+            btn.style.setProperty('background-color', '#ff4757', 'important');
+            btn.disabled = false;
+
+            setTimeout(() => {
+                icone.className = "fa fa-plus-circle";
+                texte.innerText = texteInitial;
+            }, 5000);
+        }
+    }
+
+    // Gestion du rechargement asynchrone des blocs de l'UI
+    const observer = new MutationObserver(injecterBoutonDesign);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    injecterBoutonDesign();
+})();
