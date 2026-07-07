@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Modulr - Liaison DER 2026 Popup Exacte
 // @namespace    http://tampermonkey.net/
-// @version      8.0
+// @version      8.1
 // @description  Bouton large rouge à gauche. Clique précisément sur le bouton Valider de la popup.
 // @author       le goat
 // @match        https://courtage.modulr.fr/fr/scripts/documents/documents_send.php*
 // @grant        none
-// @updateURL    https://github.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
-// @downloadURL  https://github.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
+// @updateURL    https://raw.githubusercontent.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
+// @downloadURL  https://raw.githubusercontent.com/BiggerThanTheMall/ajouter-der-mail/new/main/bouton-DER-mail.js
 // ==/UserScript==
 
 (function() {
