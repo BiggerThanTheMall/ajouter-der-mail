@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Modulr - Liaison DER 2026 Popup Exacte
 // @namespace    http://tampermonkey.net/
-// @version      8.1.2
+// @version      8.2
 // @description  Bouton large rouge à gauche. Clique précisément sur le bouton Valider de la popup.
 // @author       le goat
 // @match        https://courtage.modulr.fr/fr/scripts/documents/documents_send.php*
